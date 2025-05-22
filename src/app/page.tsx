@@ -81,6 +81,7 @@ export default function InputPage() {
       <div className="w-full max-w-lg bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 m-4">
         <Image className="mb-4 mx-auto" src="/got-it-logo.png" alt="Got It!" width={100} height={100} />
         <h1 className="text-2xl font-bold mb-6 text-center">Got It! Manual Generator</h1>
+        <h2 className="text-lg mb-6 text-center">This is the manual generator for Got It! quizzes. Please set up native meeting integration to automatically generate Got It! quizzes and send them to your participants.</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <input
