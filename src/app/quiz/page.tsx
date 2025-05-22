@@ -58,27 +58,26 @@ export default function QuizPage() {
     // send email notification
     const sendEmailNotification = useCallback(async (score: number, percentage: number) => {
         if (!storedHost || emailSent) return;
-
+    
         try {
-            // Only send email if the score is less than 75%
-            if (percentage < 75) {
-                const response = await fetch('/api/send-email', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        hostEmail: storedHost,
-                        participantEmail: participantEmail || 'Anonymous Participant',
-                        quizTitle: quizData.title
-                    }),
-                });
-
-                if (response.ok) {
-                    setEmailSent(true);
-                } else {
-                    console.error('Failed to send email notification');
-                }
+            const success = percentage >= 75;
+            const response = await fetch('/api/send-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    hostEmail: storedHost,
+                    participantEmail: participantEmail || 'Anonymous Participant',
+                    quizTitle: quizData.title,
+                    success: success
+                }),
+            });
+    
+            if (response.ok) {
+                setEmailSent(true);
+            } else {
+                console.error('Failed to send email notification');
             }
         } catch (error) {
             console.error('Error sending email notification:', error);
@@ -124,15 +123,13 @@ export default function QuizPage() {
             const calculatedPercentage = (calculatedScore / quizData.questions.length) * 100;
             setScore(calculatedScore);
             setPercentage(calculatedPercentage);
+            
+            // Send email notification here, after score calculation
+            if (!emailSent) {
+                sendEmailNotification(calculatedScore, calculatedPercentage);
+            }
         }
-    }, [showResults, quizData.questions?.length]);
-
-    // Send email notification if score is less than 75% - moved outside conditional rendering
-    useEffect(() => {
-        if (showResults && percentage < 75 && !emailSent) {
-            sendEmailNotification(score, percentage);
-        }
-    }, [showResults, percentage, score, sendEmailNotification, emailSent]);
+    }, [showResults, quizData.questions?.length, emailSent, sendEmailNotification]);
 
     // if quiz data is not loaded yet, show loading
     if (!quizData || !quizData.questions || quizData.questions.length === 0) {
