@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function QuizPage() {
@@ -18,7 +18,6 @@ export default function QuizPage() {
     const [participantEmail, setParticipantEmail] = useState<string | null>(null);
     const [score, setScore] = useState(0);
     const [percentage, setPercentage] = useState(0);
-    const emailSentRef = useRef(false);
 
     // get quiz data from local storage
     useEffect(() => {
@@ -58,10 +57,7 @@ export default function QuizPage() {
 
     // send email notification
     const sendEmailNotification = useCallback(async (score: number, percentage: number) => {
-        if (!storedHost || emailSent || emailSentRef.current) return;
-        
-        // Set emailSent state immediately to prevent multiple calls
-        setEmailSent(true);
+        if (!storedHost || emailSent) return;
 
         try {
             // Only send email if the score is less than 75%
@@ -78,14 +74,16 @@ export default function QuizPage() {
                     }),
                 });
 
-                if (!response.ok) {
+                if (response.ok) {
+                    setEmailSent(true);
+                } else {
                     console.error('Failed to send email notification');
                 }
             }
         } catch (error) {
             console.error('Error sending email notification:', error);
         }
-    }, [storedHost, quizData, participantEmail, emailSent, emailSentRef]);
+    }, [storedHost, quizData, participantEmail, emailSent]);
 
     // handle next question
     const handleNext = () => {
@@ -131,8 +129,7 @@ export default function QuizPage() {
 
     // Send email notification if score is less than 75% - moved outside conditional rendering
     useEffect(() => {
-        if (showResults && percentage < 75 && !emailSent && !emailSentRef.current) {
-            emailSentRef.current = true;
+        if (showResults && percentage < 75 && !emailSent) {
             sendEmailNotification(score, percentage);
         }
     }, [showResults, percentage, score, sendEmailNotification, emailSent]);
