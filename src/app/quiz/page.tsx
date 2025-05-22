@@ -18,6 +18,12 @@ export default function QuizPage() {
     // get quiz data from local storage
     useEffect(() => {
         const storedQuizData = localStorage.getItem('quizData');
+        const storedHost = localStorage.getItem('host');
+
+        // if host is found, set it in the state
+        if (storedHost) {
+            setStoredHost(storedHost);
+        }
 
         // if quiz data is found and in the right format, parse it and set the quiz data
         if (storedQuizData) {
@@ -140,7 +146,7 @@ export default function QuizPage() {
                         </div>
                     ) : (
                         <div className="text-center">
-                            <p className="text-lg mb-2">Well done! You've <span className="text-blue-500 font-bold">Got it!</span> Your meeting host, {storedHost}, has been notified of your completion of the quiz.</p>
+                            <p className="text-lg mb-2">Well done! You've <span className="text-blue-500 font-bold">Got it!</span> Your meeting host, <span className="text-blue-500 font-bold">{storedHost}</span>, has been notified of your completion of the quiz.</p>
                         </div>
                     )}
                 </div>
