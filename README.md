@@ -4,7 +4,11 @@ a meeting quiz generator that proves you were **present**
 
 ## how to run locally
 
-first, run the development server:
+first, create the `.env.local` file in the `got-it` directory.
+
+then, fill the file following the sample in `.env.sample`.
+
+finally, run the development server:
 
 ```bash
 npm install
