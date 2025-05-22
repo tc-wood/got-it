@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function QuizPage() {
@@ -14,10 +14,26 @@ export default function QuizPage() {
     const [selectedAnswers, setSelectedAnswers] = useState<(string | null)[]>([]);
     const [showResults, setShowResults] = useState(false);
     const [expandedQuestions, setExpandedQuestions] = useState<number[]>([]);
+    const [emailSent, setEmailSent] = useState(false);
+    const [participantEmail, setParticipantEmail] = useState<string | null>(null);
+    const [score, setScore] = useState(0);
+    const [percentage, setPercentage] = useState(0);
 
     // get quiz data from local storage
     useEffect(() => {
         const storedQuizData = localStorage.getItem('quizData');
+        const storedHost = localStorage.getItem('host');
+        const storedParticipantEmail = localStorage.getItem('participantEmail');
+
+        // if host is found, set it in the state
+        if (storedHost) {
+            setStoredHost(storedHost);
+        }
+
+        // if participant email is found, set it in the state
+        if (storedParticipantEmail) {
+            setParticipantEmail(storedParticipantEmail);
+        }
 
         // if quiz data is found and in the right format, parse it and set the quiz data
         if (storedQuizData) {
@@ -38,6 +54,35 @@ export default function QuizPage() {
         newSelectedAnswers[currentQuestion] = answer;
         setSelectedAnswers(newSelectedAnswers);
     };
+
+    // send email notification
+    const sendEmailNotification = useCallback(async (score: number, percentage: number) => {
+        if (!storedHost || emailSent) return;
+    
+        try {
+            const success = percentage >= 75;
+            const response = await fetch('/api/send-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    hostEmail: storedHost,
+                    participantEmail: participantEmail || 'Anonymous Participant',
+                    quizTitle: quizData.title,
+                    success: success
+                }),
+            });
+    
+            if (response.ok) {
+                setEmailSent(true);
+            } else {
+                console.error('Failed to send email notification');
+            }
+        } catch (error) {
+            console.error('Error sending email notification:', error);
+        }
+    }, [storedHost, quizData, participantEmail, emailSent]);
 
     // handle next question
     const handleNext = () => {
@@ -71,6 +116,21 @@ export default function QuizPage() {
         );
     };
 
+    // Update score and percentage when showResults changes
+    useEffect(() => {
+        if (showResults) {
+            const calculatedScore = calculateScore();
+            const calculatedPercentage = (calculatedScore / quizData.questions.length) * 100;
+            setScore(calculatedScore);
+            setPercentage(calculatedPercentage);
+            
+            // Send email notification here, after score calculation
+            if (!emailSent) {
+                sendEmailNotification(calculatedScore, calculatedPercentage);
+            }
+        }
+    }, [showResults, quizData.questions?.length, emailSent, sendEmailNotification]);
+
     // if quiz data is not loaded yet, show loading
     if (!quizData || !quizData.questions || quizData.questions.length === 0) {
         return (
@@ -84,9 +144,6 @@ export default function QuizPage() {
 
     // when the user has finished the quiz, show the results
     if (showResults) {
-        const score = calculateScore();
-        const percentage = (score / quizData.questions.length) * 100;
-
         return (
             <div className="min-h-screen flex flex-col items-center justify-center p-4">
                 <div className="w-full max-w-lg bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 m-4">
@@ -133,14 +190,11 @@ export default function QuizPage() {
                     </div>
                     {percentage < 75 ? (
                         <div className="text-center">
-                            <p className="text-lg mb-2">Hmm, you didn't score high enough to prove you've <span className="text-blue-500 font-bold">Got it!</span> Did you want to reach out to your meeting host for clarification?</p>
-                            <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={() => window.location.href = 'mailto:' + storedHost}>
-                                Contact your meeting host
-                            </button>
+                            <p className="text-lg mb-2">Hmm, you didn't score high enough to prove you've <span className="text-blue-500 font-bold">Got it!</span> We've sent your meeting host an email to reach out to you for clarification.</p>
                         </div>
                     ) : (
                         <div className="text-center">
-                            <p className="text-lg mb-2">Well done! You've <span className="text-blue-500 font-bold">Got it!</span> Your meeting host, {storedHost}, has been notified of your completion of the quiz.</p>
+                            <p className="text-lg mb-2">Well done! You've <span className="text-blue-500 font-bold">Got it!</span> Your meeting host, <span className="text-blue-500 font-bold">{storedHost}</span>, has been notified of your completion of the quiz.</p>
                         </div>
                     )}
                 </div>
@@ -170,8 +224,8 @@ export default function QuizPage() {
                             <button
                                 key={index}
                                 className={`w-full text-left p-3 rounded border ${selectedAnswers[currentQuestion] === option
-                                        ? 'bg-blue-100 dark:bg-blue-900 border-blue-500'
-                                        : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                                    ? 'bg-blue-100 dark:bg-blue-900 border-blue-500'
+                                    : 'hover:bg-gray-50 dark:hover:bg-gray-700'
                                     }`}
                                 onClick={() => handleAnswerSelect(option)}
                             >
@@ -186,8 +240,8 @@ export default function QuizPage() {
                         onClick={handlePrevious}
                         disabled={currentQuestion === 0}
                         className={`py-2 px-4 rounded ${currentQuestion === 0
-                                ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'
-                                : 'bg-gray-500 hover:bg-gray-600 text-white'
+                            ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'
+                            : 'bg-gray-500 hover:bg-gray-600 text-white'
                             }`}
                     >
                         Previous
@@ -197,8 +251,8 @@ export default function QuizPage() {
                         onClick={handleNext}
                         disabled={selectedAnswers[currentQuestion] === null}
                         className={`py-2 px-4 rounded ${selectedAnswers[currentQuestion] === null
-                                ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'
-                                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                            ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'
+                            : 'bg-blue-600 hover:bg-blue-700 text-white'
                             }`}
                     >
                         {currentQuestion === quizData.questions.length - 1 ? 'Finish' : 'Next'}
