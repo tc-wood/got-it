@@ -48,6 +48,7 @@ export default function QuizPage() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<(string | null)[]>(Array(quizData.questions.length).fill(null));
   const [showResults, setShowResults] = useState(false);
+  const [expandedQuestions, setExpandedQuestions] = useState<number[]>([]);
 
   const handleAnswerSelect = (answer: string) => {
     const newSelectedAnswers = [...selectedAnswers];
@@ -79,6 +80,15 @@ export default function QuizPage() {
     setCurrentQuestion(0);
     setSelectedAnswers(Array(quizData.questions.length).fill(null));
     setShowResults(false);
+    setExpandedQuestions([]);
+  };
+
+  const toggleQuestion = (index: number) => {
+    setExpandedQuestions(prev => 
+      prev.includes(index) 
+        ? prev.filter(i => i !== index) 
+        : [...prev, index]
+    );
   };
 
   if (showResults) {
@@ -88,7 +98,7 @@ export default function QuizPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 m-4">
-          <h1 className="text-2xl font-bold mb-6 text-center">Quiz Results</h1>
+          <h1 className="text-2xl font-bold mb-6 text-center">Your results...</h1>
           <div className="text-center mb-6">
             <p className="text-lg mb-2">Your score: {score} out of {quizData.questions.length}</p>
             <p className="text-xl font-bold">{percentage}%</p>
@@ -96,29 +106,51 @@ export default function QuizPage() {
           <div className="space-y-4 mb-6">
             {quizData.questions.map((q, index) => (
               <div key={q.id} className="p-3 rounded border">
-                <p className="font-medium">{index + 1}. {q.question}</p>
-                <p className="mt-1">
-                  Your answer: <span className={selectedAnswers[index] === q.correctAnswer ? "text-green-500 font-bold" : "text-red-500 font-bold"}>
-                    {selectedAnswers[index]}
-                  </span>
-                </p>
-                {selectedAnswers[index] !== q.correctAnswer && (
-                  <p className="text-green-500">Correct answer: {q.correctAnswer}</p>
-                )}
-                {q.tooltip && (
-                  <p className="text-gray-400 mt-2">
-                    <span className="font-bold">Tooltip:</span> {q.tooltip}
-                  </p>
+                <div className="flex justify-between items-center cursor-pointer" onClick={() => toggleQuestion(index)}>
+                  <p className="font-medium">{index + 1}. {q.question}</p>
+                  <div className="flex items-center">
+                    <span className={selectedAnswers[index] === q.correctAnswer ? "text-green-500 font-bold mr-2" : "text-red-500 font-bold mr-2"}>
+                      {selectedAnswers[index]}
+                    </span>
+                    <svg 
+                      className={`w-5 h-5 transition-transform ${expandedQuestions.includes(index) ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24" 
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+                
+                {expandedQuestions.includes(index) && (
+                  <div className="mt-3 pl-4 border-l-2 border-gray-300">
+                    {selectedAnswers[index] !== q.correctAnswer && (
+                      <p className="text-green-500 my-2">Correct answer: {q.correctAnswer}</p>
+                    )}
+                    {q.tooltip && (
+                      <div className="mt-2 text-gray-400">
+                        {q.tooltip}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             ))}
           </div>
-          <button 
-            onClick={resetQuiz}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded"
-          >
-            Restart Quiz
-          </button>
+          {percentage < 75 ? (
+            <div className="text-center">
+              <p className="text-lg mb-2">Hmm, you didn't score high enough to prove you've <span className="text-blue-500 font-bold">Got it!</span> Did you want to reach out to your meeting host for clarification?</p>
+              <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={() => window.location.href = 'https://www.microsoft.com/en-gb/microsoft-teams/log-in'}>
+                Contact your meeting host
+              </button>
+            </div>
+          ) : (
+            <div className="text-center">
+              <p className="text-lg mb-2">Well done! You've <span className="text-blue-500 font-bold">Got it!</span> Your meeting host has been notified of your completion of the quiz.</p>
+            </div>
+          )}
         </div>
       </div>
     );
