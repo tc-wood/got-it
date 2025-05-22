@@ -53,7 +53,7 @@ export default function InputPage() {
                 },
                 ...
               ]
-            }`,
+            }. Make sure the quiz is in the language of the transcript, even if this prompt is in English. The transcript can also be in English.`,
           },
         ],
         response_format: { type: "json_object" },
