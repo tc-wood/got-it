@@ -84,7 +84,8 @@ export default function InputPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <input
-              type="text"
+              required
+              type="email"
               name="host"
               id="host"
               value={host}
@@ -93,6 +94,8 @@ export default function InputPage() {
               className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-4"
             />
             <textarea
+              required
+              minLength={100}
               name="input"
               id="data"
               value={input}
